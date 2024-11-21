@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Task Manager Web App</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f9;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h2 {
+      text-align: center;
+      color: #333;
+    }
+
+    .input-section {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    input, select, button {
+      padding: 10px;
+      font-size: 14px;
+      border-radius: 5px;
+      border: 1px solid #ddd;
+    }
+
+    button {
+      background-color: #5c6bc0;
+      color: white;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #3f4d96;
+    }
+
+    .task-list {
+      max-width: 600px;
+      margin: 0 auto;
+      list-style-type: none;
+      padding: 0;
+    }
+
+    .list-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px;
+      background-color: #fff;
+      margin-bottom: 10px;
+      border-radius: 5px;
+      border: 1px solid #ddd;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      animation: slideIn 0.3s ease-out;
+    }
+
+    .list-item button {
+      margin-left: 10px;
+      padding: 5px 10px;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .done {
+      text-decoration: line-through;
+      color: gray;
+      transition: color 0.3s ease, text-decoration 0.3s ease;
+    }
+
+    .priority-high {
+      background-color: #d32f2f;
+      color: white;
+    }
+
+    .priority-medium {
+      background-color: #ffa000;
+      color: white;
+    }
+
+    .priority-low {
+      background-color: #388e3c;
+      color: white;
+    }
+
+    .category {
+      font-style: italic;
+      color: #777;
+      margin-right: 10px;
+    }
+
+    /* Animations */
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(-100%);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    @keyframes fadeOut {
+      from {
+        opacity: 1;
+      }
+      to {
+        opacity: 0;
+      }
+    }
+
+    .fade-out {
+      animation: fadeOut 0.5s forwards;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Task List</h2>
+  <div class="input-section">
+    <input type="text" id="itemInput" placeholder="Enter task">
+    <select id="categorySelect">
+      <option value="">Select Category</option>
+      <option value="Work">Work</option>
+      <option value="Personal">Personal</option>
+      <option value="Study">Study</option>
+    </select>
+    <select id="prioritySelect">
+      <option value="">Select Priority</option>
+      <option value="high">High</option>
+      <option value="medium">Medium</option>
+      <option value="low">Low</option>
+    </select>
+    <button id="addButton">Add Item</button>
+  </div>
+
+  <ul id="myList" class="task-list"></ul>
+
+  <script>
+    let addBtn = document.getElementById("addButton");
+    let itemInput = document.getElementById("itemInput");
+    let categorySelect = document.getElementById("categorySelect");
+    let prioritySelect = document.getElementById("prioritySelect");
+    let myList = document.getElementById("myList");
+
+    // Load tasks from local storage
+    function loadTasks() {
+      const tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+      tasks.forEach(task => {
+        addTaskToDOM(task);
+      });
+    }
+
+    // Save tasks to local storage
+    function saveTasks(tasks) {
+      localStorage.setItem("tasks", JSON.stringify(tasks));
+    }
+
+    // Function to add task to the list
+    function addTaskToDOM(task) {
+      const listItem = document.createElement("li");
+      listItem.className = "list-item " + task.priority;
+
+      const taskText = document.createElement("span");
+      taskText.textContent = task.text;
+      if (task.completed) {
+        taskText.classList.add("done");
+      }
+
+      const doneButton = document.createElement("button");
+      doneButton.textContent = "Done";
+      doneButton.addEventListener("click", function () {
+        task.completed = !task.completed;
+        taskText.classList.toggle("done");
+        saveTasks(getAllTasks()); // Save updated tasks to localStorage
+      });
+
+      const deleteButton = document.createElement("button");
+      deleteButton.textContent = "Delete";
+      deleteButton.addEventListener("click", function () {
+        let tasks = getAllTasks(); // Get all tasks
+        tasks = tasks.filter(t => t.text !== task.text);  // Remove the task from the list
+        saveTasks(tasks);  // Save updated tasks to localStorage
+        listItem.classList.add("fade-out"); // Apply fade-out animation
+        setTimeout(function() {
+          myList.removeChild(listItem); // Remove the task after fade-out
+        }, 500);
+      });
+
+      const editButton = document.createElement("button");
+      editButton.textContent = "Edit";
+      editButton.addEventListener("click", function () {
+        const newTaskText = prompt("Edit your task", task.text);
+        if (newTaskText && newTaskText.trim() !== "") {
+          task.text = newTaskText.trim();
+          taskText.textContent = task.text;
+          saveTasks(getAllTasks()); // Save updated tasks to localStorage
+        }
+      });
+
+      const categoryText = document.createElement("span");
+      categoryText.className = "category";
+      categoryText.textContent = task.category;
+
+      listItem.appendChild(categoryText);
+      listItem.appendChild(taskText);
+      listItem.appendChild(doneButton);
+      listItem.appendChild(editButton);
+      listItem.appendChild(deleteButton);
+
+      myList.appendChild(listItem);
+    }
+
+    // Helper function to get all tasks from localStorage
+    function getAllTasks() {
+      return JSON.parse(localStorage.getItem("tasks")) || [];
+    }
+
+    // Event listener for adding a task
+    addBtn.addEventListener("click", function () {
+      const inputText = itemInput.value.trim();
+      const category = categorySelect.value;
+      const priority = prioritySelect.value;
+
+      // Validate input
+      if (inputText === "" || category === "" || priority === "") {
+        alert("Please enter a valid task with category and priority.");
+        return;
+      }
+
+      const tasks = getAllTasks();
+
+      const task = {
+        text: inputText,
+        completed: false,
+        category: category,
+        priority: priority
+      };
+
+      tasks.push(task);
+      saveTasks(tasks);  // Save the updated tasks
+      addTaskToDOM(task);  // Add the new task to the DOM
+
+      itemInput.value = "";
+      categorySelect.value = "";
+      prioritySelect.value = "";
+    });
+
+    // Load tasks from local storage when the page loads
+    loadTasks();
+  </script>
+
+</body>
+</html>
